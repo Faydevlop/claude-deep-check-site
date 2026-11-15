@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Saved target artifacts / scratch (never commit downloaded bundles or findings with real PII)
+*.bundle.js
+scratch/
+reports/
+*.local.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
