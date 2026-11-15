@@ -16,6 +16,12 @@ It favors manual, observable evidence over automated scanners: read what the sit
 ships to the browser, reason about the backend it exposes, and report concrete findings with
 real request/response evidence.
 
+**Fix-first by design.** This is a defensive tool for owners hardening their own sites — the
+same category as a linter, `npm audit`, or a header checker. Every issue it surfaces is reported
+*together with the remediation that closes it* (secure Firestore rules, RLS policies, header
+config, server-side roles, …). It describes problems at the level needed to **fix** them, not to
+weaponize them, and it will not run DoS, destructive writes, or attacks on systems you don't own.
+
 ## ⚠️ Authorized / defensive use only
 
 This skill makes **active requests against a live target**. Only use it on:
@@ -92,6 +98,7 @@ references/
   recon.md                # backend fingerprints and where each one leaks
   firestore.md            # ready-to-adapt Firestore request shapes
   authz.md                # generic IDOR / self-write playbook (any backend)
+  fixes.md                # remediation catalog — the concrete fix for each finding
   owasp-top10.md          # OWASP Top 10 (2021) -> concrete checks + scorecard rules
   demo-guide.md           # format for a live, non-technical demo walkthrough
 scripts/

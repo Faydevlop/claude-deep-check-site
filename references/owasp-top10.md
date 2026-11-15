@@ -9,12 +9,14 @@ a verdict and one line of evidence. Use exactly these verdicts:
 - **Not tested** — out of scope / no authorized access / not reachable in this pass. Say why;
   never guess a pass.
 
-Render it as a table:
+Render it as a table — include the fix for anything not fully followed (this stays a fix-first
+report; pull remediations from `references/fixes.md`):
 
-| # | Category | Verdict | Evidence / note |
-|---|----------|---------|-----------------|
-| A01 | Broken Access Control | Not followed | Any signed-in user can read all `users` records (Finding 1) |
-| ... | ... | ... | ... |
+| # | Category | Verdict | Evidence / note | Fix |
+|---|----------|---------|-----------------|-----|
+| A01 | Broken Access Control | Not followed | Any signed-in user can read all `users` records (Finding 1) | Scope the Firestore read rule to `request.auth.uid == uid` |
+| A05 | Security Misconfiguration | Partial | HSTS present; CSP and X-Frame-Options absent | Add CSP + `X-Frame-Options: DENY` (fixes.md) |
+| ... | ... | ... | ... | ... |
 
 ## What maps to each category
 

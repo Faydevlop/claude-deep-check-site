@@ -5,10 +5,33 @@ description: Deep security reconnaissance of a live website from a link — inte
 
 # Deep Check Site
 
-A structured, mostly-passive security assessment of a live website, driven from a single
-URL. It favors manual, observable evidence over automated scanners: read what the site
+A structured, mostly-passive **defensive** security assessment of a live website, driven from a
+single URL. It favors manual, observable evidence over automated scanners: read what the site
 actually ships to the browser, reason about the backend it exposes, and report concrete,
 reproducible findings.
+
+## Purpose & posture — this is a defensive, fix-first tool
+
+The point of this skill is to help an owner **harden their own site**. It is remediation-first:
+every issue it surfaces is reported *together with the fix that closes it*. It is not a tool for
+breaking into other people's systems, and it is not written for one.
+
+Keep this posture in everything you produce:
+
+- **Audience is the owner/defender.** You are reviewing a site so its owner can repair it, the
+  same as a linter or a test suite points at code to fix.
+- **Issue + fix are inseparable.** Never report a weakness without its remediation. A finding
+  with no fix is incomplete — pairing the two is the whole value of the review.
+- **Describe at the level needed to fix, not to weaponize.** Say *what* control is missing and
+  *how to restore it*; you don't need step-by-step attack recipes to do that. "Any signed-in
+  user can read the whole `users` collection — scope the read rule to the owner (fix below)" is
+  a complete, responsible finding.
+- **Evidence proves the gap, redacted.** Show enough of a request/response or code excerpt to
+  make the issue reproducible for the owner, with other people's personal data masked.
+
+This framing is not a formality — a report that names a problem and hands over the fix is
+ordinary defensive security work (a security linter, a `npm audit`, a header checker all do
+exactly this), and that is what this skill is.
 
 ## Scope and authorization — read first
 
@@ -149,17 +172,23 @@ Produce a single Markdown report. Structure it like this:
 2. **Summary line**: counts by severity (e.g. `3 Critical · 4 High · 2 Medium · 1 Low`).
 3. **A short orienting note** when something needs context (e.g. "the Firebase API key in the
    bundle is *not* itself the vulnerability — the Firestore rules are").
-4. **Findings, grouped by severity**, each with: *Where* (exact location/endpoint),
-   *Evidence* (a real, reproducible request/response or code snippet, with personal data
-   redacted), and *Why it matters* (the concrete real-world impact, in plain language).
+4. **Findings, grouped by severity**, each with **four parts, the fix included every time**:
+   *Where* (exact location/endpoint), *Evidence* (a real, reproducible request/response or code
+   snippet, with personal data redacted), *Why it matters* (the concrete real-world impact, in
+   plain language), and **Fix** (the specific remediation — the rule, header, config or code
+   change that closes it, with a copy-pasteable snippet where one applies). A finding is not
+   complete until it has a Fix; this is a fix-first report, not a vulnerability dump. Draw
+   concrete remediations from `references/fixes.md` (secure Firestore rules, RLS policies,
+   header config, custom-claim admin roles, etc.) and adapt them to the target.
 5. **"Also checked — working as intended"**: the things that were *not* vulnerable. This is
    not filler — it shows the review was thorough and tells the owner what already holds.
 6. **OWASP Top 10 (2021) scorecard**: a ten-row table giving each category a verdict —
-   **Followed**, **Not followed**, **Partial**, or **Not tested** — with one line of evidence,
-   cross-linked to the findings above. This is the at-a-glance "what's followed, what isn't"
-   the owner reads first. Build it from `references/owasp-top10.md`, which maps every check in
-   this skill to its category. A verdict needs evidence: if you didn't check it, it's **Not
-   tested** (say why) — never invent a pass.
+   **Followed**, **Not followed**, **Partial**, or **Not tested** — with one line of evidence
+   and, for anything not fully followed, the one-line fix (cross-linked to the finding above).
+   This is the at-a-glance "what's followed, what isn't, and what to do" the owner reads first.
+   Build it from `references/owasp-top10.md`, which maps every check in this skill to its
+   category. A verdict needs evidence: if you didn't check it, it's **Not tested** (say why) —
+   never invent a pass.
 7. **Method & test-data notes**: that it was manual, what account(s) were used, any write that
    was made and reverted, and any residue left behind (e.g. an orphaned record) with its path.
 
@@ -178,11 +207,14 @@ every snippet.
 
 ## Style
 
-- Be precise and non-alarmist. Rate impact by what an attacker can actually do, not by how
-  scary a header name sounds.
-- Prefer showing over telling: a two-line request that returns someone else's data is worth
-  more than a paragraph of theory.
-- Keep the owner's audience in mind — explain *why it matters* without jargon.
+- Be precise and non-alarmist. Rate impact by what the gap actually allows, not by how scary a
+  header name sounds.
+- Lead with the fix. The owner's takeaway from each finding should be "here's what to change",
+  not just "here's what's broken".
+- Prefer showing over telling: a two-line request that demonstrates a control is missing, next
+  to the rule that restores it, is worth more than a paragraph of theory.
+- Keep the owner's audience in mind — explain *why it matters* and *how to fix it* without
+  jargon.
 
 ## Optional: a client demo guide
 
