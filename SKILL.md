@@ -1,6 +1,6 @@
 ---
 name: deep-check-site
-description: Deep security reconnaissance of a live website from a link — maps the backend, inspects HTTP security headers, scans public JS bundles for exposed secrets (Firebase/Supabase config, hardcoded admin emails, API keys), reviews auth/authorization behavior, cookies and TLS, then writes a prioritized findings report. Use when the user gives a URL and asks to "check", "audit", "analyze", "scan", "security review", or "deep check" a site. Authorized/defensive testing only (your own site or one you have written permission to test).
+description: Deep security reconnaissance of a live website from a link — intelligently classifies the backend (Firebase vs Supabase vs a custom server vs static) from its signals, inspects HTTP security headers, scans public JS bundles for exposed secrets (Firebase/Supabase config, hardcoded admin emails, API keys), reviews auth/authorization behavior, cookies and TLS, then writes a prioritized findings report with an OWASP Top 10 (2021) pass/fail scorecard showing what's followed and what isn't. Use when the user gives a URL and asks to "check", "audit", "analyze", "scan", "security review", or "deep check" a site. Authorized/defensive testing only (your own site or one you have written permission to test).
 ---
 
 # Deep Check Site
@@ -44,11 +44,26 @@ ownership/permission, stop and explain why.
 Work through these phases in order. Skip a phase only when it doesn't apply (e.g. no backend
 API is reachable), and note the skip in the report.
 
-### 1. Recon — what is this thing?
+### 1. Recon — what is this thing? (the "backend thinker")
 
-- Load the site and note the stack: framework (React/Vue/Next/etc.), hosting/CDN, and
-  especially the **backend**. Look in the page source and network traffic for tell-tale
-  domains and config:
+Before testing anything, work out **what kind of backend you're dealing with** — the whole
+test plan depends on it. A managed backend (Firebase, Supabase, Amplify) is secured by
+*config-level rules* you probe indirectly; a hand-rolled server is secured by *per-endpoint
+code* where IDOR lives. Don't guess — reason from signals:
+
+- Run `scripts/detect_backend.py <url>` first. It fetches the page and its JS bundles, scores
+  each backend fingerprint by the signals actually present, and prints a ranked verdict
+  ("Firebase — high confidence, because: talks to Firestore REST API, Firebase SDK init, ...")
+  plus which follow-up checks matter for the winner. Treat the verdict as a hypothesis and
+  confirm it by watching the Network tab while you use the app.
+- Is it **managed BaaS or an actual server?** Managed (Firebase/Supabase/Appwrite/Pocketbase):
+  the client talks straight to the provider's API with a public key, and authorization lives
+  in rules/RLS/permissions — go to phase 4's rule-probing. A **custom server** (REST/GraphQL):
+  the client calls your own `/api/...`, authorization is hand-written per endpoint — hunt IDOR
+  and missing function-level checks (`references/authz.md`). A **static site** with no backend:
+  the attack surface is mostly the bundle and headers.
+- Then note the rest of the stack: framework (React/Vue/Next/etc.), hosting/CDN, and the
+  tell-tale backend domains and config in page source and network traffic:
   - Firebase / Firestore: `firebaseapp.com`, `firestore.googleapis.com`, a `firebaseConfig`
     object with `apiKey`, `projectId`, `authDomain`.
   - Supabase: `*.supabase.co`, an `anon` key (a JWT), `supabase.co/rest/v1`.
@@ -66,7 +81,7 @@ Everything a visitor's browser downloads is public. Fetch the bundles and grep t
   OpenAI, etc.). A publicly-shipped admin-email check is a classic finding — it leaks a staff
   identity and proves there's no real server-side role system.
 - **Client-side authorization logic**: code that decides admin/role/paid status in the
-  browser (`isAdmin = [...].includes(email)`, `role === 'business_owner'`). Anything the
+  browser (`isAdmin = [...].includes(email)`, `role === 'premium'`). Anything the
   client *decides* is something the backend probably *doesn't enforce* — flag it and test the
   backend directly in phase 4.
 - **Encryption done wrong**: hardcoded/shared salts, keys derived on the client, private key
@@ -139,7 +154,13 @@ Produce a single Markdown report. Structure it like this:
    redacted), and *Why it matters* (the concrete real-world impact, in plain language).
 5. **"Also checked — working as intended"**: the things that were *not* vulnerable. This is
    not filler — it shows the review was thorough and tells the owner what already holds.
-6. **Method & test-data notes**: that it was manual, what account(s) were used, any write that
+6. **OWASP Top 10 (2021) scorecard**: a ten-row table giving each category a verdict —
+   **Followed**, **Not followed**, **Partial**, or **Not tested** — with one line of evidence,
+   cross-linked to the findings above. This is the at-a-glance "what's followed, what isn't"
+   the owner reads first. Build it from `references/owasp-top10.md`, which maps every check in
+   this skill to its category. A verdict needs evidence: if you didn't check it, it's **Not
+   tested** (say why) — never invent a pass.
+7. **Method & test-data notes**: that it was manual, what account(s) were used, any write that
    was made and reverted, and any residue left behind (e.g. an orphaned record) with its path.
 
 Severity guidance:

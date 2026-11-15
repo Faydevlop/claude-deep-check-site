@@ -3,11 +3,14 @@
 A [Claude](https://claude.com/claude-code) **skill** for a deep, mostly-passive security
 assessment of a live website — driven from a single URL.
 
-Give Claude a link and it maps the backend, inspects HTTP security headers, scans the public
-JavaScript bundles for leaked secrets (Firebase/Supabase config, hardcoded admin emails, API
-keys), reviews authentication and authorization behavior, checks cookies and TLS, and writes a
-**prioritized, reproducible findings report** — then, optionally, a live demo guide you can walk
-a non-technical owner through in their own browser.
+Give Claude a link and it **intelligently classifies the backend** (Firebase vs Supabase vs a
+custom server vs a static site — from the signals it actually finds), inspects HTTP security
+headers, scans the public JavaScript bundles for leaked secrets (Firebase/Supabase config,
+hardcoded admin emails, API keys), reviews authentication and authorization behavior, checks
+cookies and TLS, and writes a **prioritized, reproducible findings report** capped with an
+**OWASP Top 10 (2021) pass/fail scorecard** that shows, at a glance, what's followed and what
+isn't — then, optionally, a live demo guide you can walk a non-technical owner through in their
+own browser.
 
 It favors manual, observable evidence over automated scanners: read what the site actually
 ships to the browser, reason about the backend it exposes, and report concrete findings with
@@ -30,12 +33,13 @@ You are responsible for staying in scope.
 
 | Phase | Looks for |
 |-------|-----------|
-| **Recon** | Stack & backend fingerprint (Firebase, Supabase, Amplify, custom API), JS bundles |
+| **Recon (backend thinker)** | Classifies the backend from its signals — Firebase, Supabase, Amplify, Appwrite, Pocketbase, custom REST/GraphQL, or static — with the evidence behind the verdict |
 | **Bundle analysis** | Hardcoded secrets, admin-email allowlists, client-side auth/role logic, crypto done wrong |
 | **Headers & transport** | CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, cookie flags, HTTPS |
 | **AuthN / AuthZ** | Broad-read rules & IDOR, sensitive fields, privilege/tier self-escalation, moderation-data exposure, "delete doesn't delete" |
 | **Auth hygiene** | Password policy, brute-force friction, account-existence leaks, session handling |
 | **Input handling** | Stored-XSS spot checks, open redirects (non-destructive) |
+| **Report** | Prioritized findings + an **OWASP Top 10 (2021) scorecard** (Followed / Not followed / Partial / Not tested) |
 
 ## Install
 
@@ -70,6 +74,9 @@ Claude will confirm authorization, then work through the phases and produce the 
 ### The helper scripts (standalone, no dependencies)
 
 ```bash
+# Classify the backend (Firebase / Supabase / custom server / static) from its signals
+python scripts/detect_backend.py https://example.com
+
 # Present/absent table of security headers, cookie flags, HTTPS behavior
 python scripts/check_headers.py https://example.com
 
@@ -85,8 +92,10 @@ references/
   recon.md                # backend fingerprints and where each one leaks
   firestore.md            # ready-to-adapt Firestore request shapes
   authz.md                # generic IDOR / self-write playbook (any backend)
+  owasp-top10.md          # OWASP Top 10 (2021) -> concrete checks + scorecard rules
   demo-guide.md           # format for a live, non-technical demo walkthrough
 scripts/
+  detect_backend.py       # classifies the backend from page + bundle signals
   check_headers.py        # HTTP security-header & cookie checker
   scan_bundle.py          # JS-bundle secret/auth-logic scanner
 ```

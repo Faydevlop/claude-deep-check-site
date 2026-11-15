@@ -29,8 +29,11 @@ collections: `reports`, `messages`, `orders`, `payments`, `admin*`.
 ## 2. What sensitive fields are inside those records?
 
 Inspect returned documents for: `email`, `phone`, `address`, private key material
-(`e2ePrivateKey`, `privateKey`), tokens, internal flags (`role`, `accountType`, `isAdmin`).
+(`privateKey`, `secretKey`), tokens, internal flags (`role`, `accountType`, `isAdmin`).
 A readable collection is worse when the records carry secrets.
+
+> Note: field names vary by app — adapt the list above (e.g. `privateKey`,
+> `secretKey`, `apiToken`, `refreshToken`) to whatever the target actually stores.
 
 ## 3. Privilege / tier self-escalation (write test — throwaway account, then revert)
 
